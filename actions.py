@@ -7,7 +7,7 @@ import json
 from transformers import AutoModelForCausalLM, AutoTokenizer
 
 # Set up logging
-logging.basicConfig(level=logging.INFO, format="%(asctime)s - %(levelname)s - %(message)s")
+logging.basicConfig(filename='devops_bot.log', level=logging.INFO, format="%(asctime)s - %(levelname)s - %(message)s")
 
 def load_model():
     # Load the tokenizer and model
@@ -71,24 +71,27 @@ def load_dialogpt_config():
 def define_roles_and_responsibilities():
     # Define the roles and responsibilities of the assistant agents
     assistant_agents = {
-        "devops manager": "you're responsible for overall success of the project...",
-        "devops analyst": "you're responsible for collecting, analyzing, reporting on data...",
-        "devops developer": "you for developing, testing, and deploying the project's applications...",
-        "devops security analyst": "you are responsible for identifying and mitigating security risks...",
-        "devops automation engineer": "you're responsible for automating tasks and processes..."
+        "devops manager": {
+            "role": "you're responsible for overall success of the project...",
+            "tasks": ["task1", "task2", "task3"],
+            "compliance": ["compliance1", "compliance2", "compliance3"]
+        },
+        # ... similar changes for the other roles ...
     }
 
     return assistant_agents
 
 def create_assistant_agents(assistant_agents, dialogpt_config):
     # Create the assistant agents
-    for agent_name, agent_role in assistant_agents.items():
+    for agent_name, agent_info in assistant_agents.items():
         try:
             # Use autogen.AssistantAgent() function (documented in autogen module)
             agent = autogen.AssistantAgent(
                 name=agent_name,
                 llm_config=dialogpt_config, # Use the dialogpt_config variable here
-                system_message=agent_role,
+                system_message=agent_info["role"],
+                tasks=agent_info["tasks"],
+                compliance=agent_info["compliance"]
             )
             logging.info(f"Created assistant agent {agent_name}")
         except Exception as e:
@@ -109,6 +112,7 @@ def create_group_chat(assistant_agents):
 def assign_leader(assistant_agents):
     # Assign the DevOps Manager agent to lead the group
     assistant_agents["devops manager"].is_leader = True
+    logging.info("Assigned DevOps Manager as the leader")
 
 def create_manager(groupchat, dialogpt_config):
     # Create a manager object using the autogen.GroupChatManager class
@@ -134,6 +138,11 @@ def initiate_chat(user_proxy, manager):
         message="Hello everyone. I'm here to monitor your progress on the project."
     )
 
+    # Allow for user input at any time
+    while True:
+        user_input = input("Enter your message: ")
+        user_proxy.send_message(manager, user_input)
+
 def main():
     load_model()
     generate_requirements()
@@ -150,4 +159,3 @@ def main():
 
 if __name__ == "__main__":
     main()
-```
